@@ -1,5 +1,8 @@
-package fr.sgo.bcm.flightaggregator.information;
+package fr.sgo.bcm.flightaggregator.information.api;
 
+import fr.sgo.bcm.flightaggregator.information.model.FlightRequest;
+import fr.sgo.bcm.flightaggregator.information.model.TripType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +16,10 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/api")
 public class InfoRequestApi {
+
+    @Autowired
+    public InfoRequestApi() {
+    }
 
     /**
      * GET /api/flights?departure_airport=...&arrival_airport=...&departure_date=...&return_date=...&tripType=R|OW
@@ -34,7 +41,7 @@ public class InfoRequestApi {
         }
         return ResponseEntity.ok(InfoResponse.builder()
                 .status(HttpStatus.OK)
-                .request(InfoRequest.builder()
+                .request(FlightRequest.builder()
                         .departureAirport(departureAirport)
                         .arrivalAirport(arrivalAirport)
                         .departureDate(departureDate)

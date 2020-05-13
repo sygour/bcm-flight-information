@@ -1,5 +1,6 @@
 package fr.sgo.bcm.flightaggregator.information;
 
+import fr.sgo.bcm.flightaggregator.information.api.InfoRequestApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

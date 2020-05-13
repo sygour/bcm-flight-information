@@ -1,5 +1,6 @@
-package fr.sgo.bcm.flightaggregator.information;
+package fr.sgo.bcm.flightaggregator.information.api;
 
+import fr.sgo.bcm.flightaggregator.information.model.FlightRequest;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.http.HttpStatus;
@@ -8,5 +9,5 @@ import org.springframework.http.HttpStatus;
 @Builder
 public class InfoResponse {
     private HttpStatus status;
-    private InfoRequest request;
+    private FlightRequest request;
 }

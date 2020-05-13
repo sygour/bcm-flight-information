@@ -15,6 +15,13 @@ BCM Interview project - simulating a flight information aggregator
 ./mvnw spring-boot:run
 ```
 
+### Call the API
+
+```
+http://localhost:8080/api/flights?departure_airport=CDG&arrival_airport=LHR&departure_date=2020-12-15&tripType=OW
+http://localhost:8080/api/flights?departure_airport=CDG&arrival_airport=LHR&departure_date=2020-12-15&return_date=2020-12-25&tripType=R
+```
+
 ## Implementation description
 
 ### API
@@ -61,7 +68,9 @@ Here is defined the contract that must be implemented to add an external partner
 
 ### Partner services
 
-They are not defined yet, which is a quite big limitation but I focused more on the domain and logic of the application in the given time.
+~~They are not defined yet, which is a quite big limitation but I focused more on the domain and logic of the application in the given time.~~
+
+Moon and Jazz service have been added (~30min).
 
 ### API
 

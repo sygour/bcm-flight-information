@@ -15,6 +15,7 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -127,29 +128,31 @@ class AggregatorServiceTest {
 
         Mockito.when(service_jazz.call(eq(cdg), eq(lhr), any()))
                 .thenReturn(Stream.generate(() ->
-                        FlightInformation.builder().departureAirport(cdg).arrivalAirport(lhr)
+                        FlightInformation.builder().departureAirport(cdg).arrivalAirport(lhr).price(random.nextFloat())
                                 .arrivalTime(randomTimeIn(departureDate, random))
                                 .build())
                         .limit(100));
         Mockito.when(service_jazz.call(anyString(), eq(cdg), any()))
                 .thenReturn(Stream.generate(() ->
-                        FlightInformation.builder().departureAirport(lhr).arrivalAirport(cdg)
+                        FlightInformation.builder().departureAirport(lhr).arrivalAirport(cdg).price(random.nextFloat())
                                 .departureTime(randomTimeIn(returnDate, random))
                                 .build())
                         .limit(100));
         AggregatorService aggregatorService = new AggregatorService(List.of(service_jazz));
 
-        final List<TravelInformation> result = aggregatorService.listFlightInformation(request);
+        final Map<Float, List<TravelInformation>> result = aggregatorService.listFlightInformation(request);
 
-        // every travel info should have 2 flights
-        Assertions.assertThat(result.stream()
-                .anyMatch(travelInformation -> travelInformation.getForwardWay() == null && travelInformation.getReturnWay() != null))
-                .isFalse();
-        // every travel info should have return flight leaving after forward arrived
-        Assertions.assertThat(result.stream()
-                .anyMatch(travelInformation ->
-                        travelInformation.getForwardWay().getArrivalTime().compareTo(travelInformation.getReturnWay().getDepartureTime()) > 0))
-                .isFalse();
+        for (List<TravelInformation> list : result.values()) {
+            // every travel info should have 2 flights
+            Assertions.assertThat(list.stream()
+                    .anyMatch(travelInformation -> travelInformation.getForwardWay() == null && travelInformation.getReturnWay() != null))
+                    .isFalse();
+            // every travel info should have return flight leaving after forward arrived
+            Assertions.assertThat(list.stream()
+                    .anyMatch(travelInformation ->
+                            travelInformation.getForwardWay().getArrivalTime().compareTo(travelInformation.getReturnWay().getDepartureTime()) > 0))
+                    .isFalse();
+        }
     }
 
     @Test
@@ -168,21 +171,67 @@ class AggregatorServiceTest {
                 .build();
 
         Mockito.when(service_jazz.call(eq(cdg), eq(lhr), any()))
-                .thenReturn(Stream.generate(() ->
-                        FlightInformation.builder().departureAirport(cdg).arrivalAirport(lhr)
+                .thenReturn(Stream.of(
+                        FlightInformation.builder().departureAirport(cdg).arrivalAirport(lhr).price(12f)
                                 .arrivalTime(LocalDateTime.of(departureDate, LocalTime.MIN).plus(3000, ChronoUnit.SECONDS))
+                                .build()));
+        Mockito.when(service_jazz.call(anyString(), eq(cdg), any()))
+                .thenReturn(Stream.of(
+                        FlightInformation.builder().departureAirport(lhr).arrivalAirport(cdg).price(5462f)
+                                .departureTime(LocalDateTime.of(departureDate, LocalTime.MIN).plus(1000, ChronoUnit.SECONDS))
+                                .build(),
+                        FlightInformation.builder().departureAirport(lhr).arrivalAirport(cdg).price(1842f)
+                                .departureTime(LocalDateTime.of(departureDate, LocalTime.MIN).plus(8000, ChronoUnit.SECONDS))
+                                .build()
+                ));
+        AggregatorService aggregatorService = new AggregatorService(List.of(service_jazz));
+
+        final Map<Float, List<TravelInformation>> result = aggregatorService.listFlightInformation(request);
+
+        Assertions.assertThat(result).hasSize(1);
+        final TravelInformation match = result.values()
+                .iterator().next()
+                .get(0);
+        Assertions.assertThat(match.getForwardWay().getArrivalTime()).isBefore(match.getReturnWay().getDepartureTime());
+    }
+
+    @Test
+    void listFlightInformation_should_group_by_price() {
+        final Random random = createRandom();
+
+        final PartnerFlightService service_jazz = Mockito.mock(PartnerFlightService.class);
+        final String cdg = "CDG";
+        final String lhr = "LHR";
+        final LocalDate departureDate = LocalDate.of(2020, Month.APRIL, 16);
+        final LocalDate returnDate = LocalDate.of(2020, Month.APRIL, 16);
+        final FlightRequest request = FlightRequest.builder()
+                .departureAirport(cdg)
+                .arrivalAirport(lhr)
+                .departureDate(departureDate)
+                .returnDate(returnDate)
+                .tripType(TripType.R)
+                .build();
+
+        Mockito.when(service_jazz.call(eq(cdg), eq(lhr), any()))
+                .thenReturn(Stream.generate(() ->
+                        FlightInformation.builder().departureAirport(cdg).arrivalAirport(lhr).price(random.nextFloat())
+                                .arrivalTime(randomTimeIn(departureDate, random))
                                 .build())
                         .limit(100));
         Mockito.when(service_jazz.call(anyString(), eq(cdg), any()))
                 .thenReturn(Stream.generate(() ->
-                        FlightInformation.builder().departureAirport(lhr).arrivalAirport(cdg)
-                                .departureTime(LocalDateTime.of(departureDate, LocalTime.MIN).plus(1000, ChronoUnit.SECONDS))
+                        FlightInformation.builder().departureAirport(lhr).arrivalAirport(cdg).price(random.nextFloat())
+                                .departureTime(randomTimeIn(returnDate, random))
                                 .build())
                         .limit(100));
         AggregatorService aggregatorService = new AggregatorService(List.of(service_jazz));
 
-        final List<TravelInformation> result = aggregatorService.listFlightInformation(request);
+        final Map<Float, List<TravelInformation>> result = aggregatorService.listFlightInformation(request);
 
-        Assertions.assertThat(result).isEmpty();
+        for (Map.Entry<Float, List<TravelInformation>> entry : result.entrySet()) {
+            for (TravelInformation travel : entry.getValue()) {
+                Assertions.assertThat(entry.getKey()).isEqualTo(travel.getTotalPrice());
+            }
+        }
     }
 }

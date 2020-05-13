@@ -8,4 +8,10 @@ import lombok.Data;
 public class TravelInformation {
     private FlightInformation forwardWay;
     private FlightInformation returnWay;
+
+    public Float getTotalPrice() {
+        return returnWay == null
+                ? forwardWay.getPrice()
+                : forwardWay.getPrice() + returnWay.getPrice();
+    }
 }

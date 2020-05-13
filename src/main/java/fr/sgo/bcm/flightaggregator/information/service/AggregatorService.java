@@ -8,8 +8,10 @@ import fr.sgo.bcm.flightaggregator.partner.PartnerFlightService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +25,7 @@ public class AggregatorService {
         this.partnerFlightServices = partnerFlightServices;
     }
 
-    public List<TravelInformation> listFlightInformation(FlightRequest flightRequest) {
+    public Map<Float, List<TravelInformation>> listFlightInformation(FlightRequest flightRequest) {
         if (TripType.R.equals(flightRequest.getTripType())
                 && (flightRequest.getDepartureDate().compareTo(flightRequest.getReturnDate()) > 0)) {
             throw new IllegalArgumentException("Return date must be later than departure date");
@@ -47,7 +49,10 @@ public class AggregatorService {
                         return forwardWays.map(flight -> TravelInformation.builder().forwardWay(flight).build());
                     }
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toMap(
+                        TravelInformation::getTotalPrice,
+                        Arrays::asList,
+                        (l1, l2) -> Stream.concat(l1.stream(), l2.stream()).collect(Collectors.toList())));
     }
 
     private Stream<TravelInformation> combineMatchingFlights(Stream<FlightInformation> forwardWays, Stream<FlightInformation> returnWays) {

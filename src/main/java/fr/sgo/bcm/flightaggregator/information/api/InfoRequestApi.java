@@ -1,7 +1,9 @@
 package fr.sgo.bcm.flightaggregator.information.api;
 
 import fr.sgo.bcm.flightaggregator.information.model.FlightRequest;
+import fr.sgo.bcm.flightaggregator.information.model.TravelInformation;
 import fr.sgo.bcm.flightaggregator.information.model.TripType;
+import fr.sgo.bcm.flightaggregator.information.service.AggregatorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -12,13 +14,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class InfoRequestApi {
 
+    private final AggregatorService aggregatorService;
+
     @Autowired
-    public InfoRequestApi() {
+    public InfoRequestApi(AggregatorService aggregatorService) {
+        this.aggregatorService = aggregatorService;
     }
 
     /**
@@ -39,15 +46,20 @@ public class InfoRequestApi {
         if (TripType.R.equals(tripType) && returnDate == null) {
             return ResponseEntity.badRequest().body(null);
         }
+        final FlightRequest flightRequest = FlightRequest.builder()
+                .departureAirport(departureAirport)
+                .arrivalAirport(arrivalAirport)
+                .departureDate(departureDate)
+                .returnDate(returnDate)
+                .tripType(tripType)
+                .build();
+
+        final Map<Float, List<TravelInformation>> aggregation = aggregatorService.listFlightInformation(flightRequest);
+
         return ResponseEntity.ok(InfoResponse.builder()
                 .status(HttpStatus.OK)
-                .request(FlightRequest.builder()
-                        .departureAirport(departureAirport)
-                        .arrivalAirport(arrivalAirport)
-                        .departureDate(departureDate)
-                        .returnDate(returnDate)
-                        .tripType(tripType)
-                        .build())
+                .request(flightRequest)
+                .travelsByPrice(aggregation)
                 .build());
     }
 }

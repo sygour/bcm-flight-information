@@ -1,6 +1,20 @@
 # bcm-flight-information
 BCM Interview project - simulating a flight information aggregator
 
+## Launching the application
+
+### Tests
+
+```
+./mvnw test
+```
+
+### Run
+
+```
+./mvnw spring-boot:run
+```
+
 ## Implementation description
 
 ### API

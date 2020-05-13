@@ -16,7 +16,7 @@ public class JazzOutputData implements Serializable {
 
     @Data
     @NoArgsConstructor
-    private class JazzFlight implements Serializable {
+    private static class JazzFlight implements Serializable {
         private UUID id;
         private String departure_airport;
         private String arrival_airport;
